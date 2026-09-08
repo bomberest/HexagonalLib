@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace HexagonalLib
 {
-    public partial class HexagonalGrid
+    public partial struct HexagonalGrid
     {
         #region ToOffset
 

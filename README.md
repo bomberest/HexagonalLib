@@ -1,4 +1,18 @@
 # HexagonalLib implementation for .NET
+
+## Unity Package Manager
+
+The repository root is a Unity Package Manager package. The Unity runtime sources
+are located at [`Packages/com.bomberest.hexagonal-lib/Runtime`](Packages/com.bomberest.hexagonal-lib/Runtime).
+
+In Unity Package Manager, choose **Add package from git URL** and use:
+
+```
+https://github.com/bomberest/HexagonalLib.git
+```
+
+For local development, choose **Add package from disk** and select the root
+`package.json` file.
  
 _I was highly inspired by this article: [https://www.redblobgames.com/grids/hexagons/](https://www.redblobgames.com/grids/hexagons/) and this repo is mostly just C# implementation of it. Recommended for reading. Here I will describe some technical details regarding implementation._
  

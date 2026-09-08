@@ -8,7 +8,7 @@ namespace HexagonalLib
     /// <summary>
     /// Represent geometry logic for infinity hexagonal grid
     /// </summary>
-    public partial class HexagonalGrid
+    public readonly partial struct HexagonalGrid
     {
         /// <summary>
         /// Total count of edges in one Hex
@@ -621,16 +621,7 @@ namespace HexagonalLib
         /// </summary>
         public IEnumerable<Offset> GetNeighborsAround(Offset center, int radius)
         {
-            return GetNeighborsAround(center, 0, radius - 1, GetNeighborsRing);
-        }
-
-        /// <summary>
-        /// Returns all hexes in rings from <paramref name="fromRadius"/> to
-        /// <paramref name="toRadius"/>, both inclusive, around the given <see cref="center"/>.
-        /// </summary>
-        public IEnumerable<Offset> GetNeighborsAround(Offset center, int fromRadius, int toRadius)
-        {
-            return GetNeighborsAround(center, fromRadius, toRadius, GetNeighborsRing);
+            return GetNeighborsAround(center, radius, GetNeighborsRing);
         }
 
         /// <summary>
@@ -638,16 +629,7 @@ namespace HexagonalLib
         /// </summary>
         public IEnumerable<Axial> GetNeighborsAround(Axial center, int radius)
         {
-            return GetNeighborsAround(center, 0, radius - 1, GetNeighborsRing);
-        }
-
-        /// <summary>
-        /// Returns all hexes in rings from <paramref name="fromRadius"/> to
-        /// <paramref name="toRadius"/>, both inclusive, around the given <see cref="center"/>.
-        /// </summary>
-        public IEnumerable<Axial> GetNeighborsAround(Axial center, int fromRadius, int toRadius)
-        {
-            return GetNeighborsAround(center, fromRadius, toRadius, GetNeighborsRing);
+            return GetNeighborsAround(center, radius, GetNeighborsRing);
         }
 
         /// <summary>
@@ -655,25 +637,16 @@ namespace HexagonalLib
         /// </summary>
         public IEnumerable<Cubic> GetNeighborsAround(Cubic center, int radius)
         {
-            return GetNeighborsAround(center, 0, radius - 1, GetNeighborsRing);
-        }
-
-        /// <summary>
-        /// Returns all hexes in rings from <paramref name="fromRadius"/> to
-        /// <paramref name="toRadius"/>, both inclusive, around the given <see cref="center"/>.
-        /// </summary>
-        public IEnumerable<Cubic> GetNeighborsAround(Cubic center, int fromRadius, int toRadius)
-        {
-            return GetNeighborsAround(center, fromRadius, toRadius, GetNeighborsRing);
+            return GetNeighborsAround(center, radius, GetNeighborsRing);
         }
 
         /// <summary>
         /// Returns a all hexes in the ring with a radius of <see cref="radius"/> hexes around the given <see cref="center"/>.
         /// </summary>
-        private static IEnumerable<T> GetNeighborsAround<T>(T center, int fromRadius, int toRadius, Func<T, int, IEnumerable<T>> getNeighborRing)
+        private static IEnumerable<T> GetNeighborsAround<T>(T center, int radius, Func<T, int, IEnumerable<T>> getNeighborRing)
             where T : struct
         {
-            for (var i = fromRadius; i <= toRadius; i++)
+            for (var i = 0; i < radius; i++)
             {
                 foreach (var hex in getNeighborRing(center, i))
                 {

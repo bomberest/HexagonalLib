@@ -1,0 +1,21 @@
+{
+  "name": "com.bomberest.hexagonal-lib",
+  "version": "1.0.0",
+  "displayName": "HexagonalLib",
+  "description": "Hexagonal grid geometry, coordinate conversions, and Unity vector and mesh helpers.",
+  "unity": "2018.3",
+  "keywords": [
+    "hexagon",
+    "hexagonal",
+    "grid",
+    "geometry"
+  ],
+  "author": {
+    "name": "Ivan Murashka",
+    "url": "https://github.com/bomberest/HexagonalLib"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bomberest/HexagonalLib.git"
+  }
+}

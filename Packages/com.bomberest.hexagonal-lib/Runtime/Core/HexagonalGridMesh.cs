@@ -4,7 +4,7 @@ using HexagonalLib.Coordinates;
 
 namespace HexagonalLib
 {
-    public partial class HexagonalGrid
+    public readonly partial struct HexagonalGrid
     {
         /// <summary>
         /// Calculate count of vertices and indices needed for build mesh.
