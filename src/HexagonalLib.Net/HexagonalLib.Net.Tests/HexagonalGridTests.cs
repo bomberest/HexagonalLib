@@ -1,5 +1,6 @@
 ﻿using HexagonalLib.Coordinates;
 using NUnit.Framework;
+using System.Collections.Generic;
 using static System.Math;
 
 namespace HexagonalLib.Tests
@@ -155,6 +156,21 @@ namespace HexagonalLib.Tests
                 Assert.AreEqual(grid.GetNeighbor(offset, i), offsets[i]);
                 Assert.AreEqual(grid.GetNeighbor(axial, i), axials[i]);
                 Assert.AreEqual(grid.GetNeighbor(cubic, i), cubics[i]);
+            }
+        }
+
+        [Test(Author = "Ivan Murashka", Description = "Check neighbors around can be limited to a range of radii")]
+        public void NeighborsAroundRangeTest([Values] HexagonalGridType type)
+        {
+            var grid = new HexagonalGrid(type, InscribedRadius);
+            var center = new Offset(2, -3);
+            var neighbors = new List<Offset>(grid.GetNeighborsAround(center, 1, 3));
+
+            Assert.AreEqual(36, neighbors.Count);
+            foreach (var neighbor in neighbors)
+            {
+                var distance = grid.CubeDistance(center, neighbor);
+                Assert.IsTrue(distance >= 1 && distance <= 3, $"Unexpected distance {distance} for {neighbor}");
             }
         }
     }
