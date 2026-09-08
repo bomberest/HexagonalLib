@@ -362,7 +362,7 @@ namespace HexagonalLib
         /// </summary>
         public (float X, float Y) GetCornerPoint(Offset coord, int edge)
         {
-            return GetCornerPoint(coord, edge, ToPoint2);
+            return GetCornerPoint(ToPoint2(coord), edge);
         }
 
         /// <summary>
@@ -370,7 +370,7 @@ namespace HexagonalLib
         /// </summary>
         public (float X, float Y) GetCornerPoint(Axial coord, int edge)
         {
-            return GetCornerPoint(coord, edge, ToPoint2);
+            return GetCornerPoint(ToPoint2(coord), edge);
         }
 
         /// <summary>
@@ -378,14 +378,13 @@ namespace HexagonalLib
         /// </summary>
         public (float X, float Y) GetCornerPoint(Cubic coord, int edge)
         {
-            return GetCornerPoint(coord, edge, ToPoint2);
+            return GetCornerPoint(ToPoint2(coord), edge);
         }
 
         /// <summary>
         /// Returns corner point in 2d space  of given coordinate
         /// </summary>
-        private (float X, float Y) GetCornerPoint<T>(T coord, int edge, Func<T, (float X, float Y)> toPoint)
-            where T : struct
+        private (float X, float Y) GetCornerPoint((float X, float Y) center, int edge)
         {
             edge = NormalizeIndex(edge);
             var angleDeg = 60 * edge;
@@ -394,7 +393,6 @@ namespace HexagonalLib
                 angleDeg -= 30;
             }
 
-            var center = toPoint(coord);
             var angleRad = PI / 180 * angleDeg;
             var x = (float) (center.X + DescribedRadius * Cos(angleRad));
             var y = (float) (center.Y + DescribedRadius * Sin(angleRad));
@@ -466,6 +464,46 @@ namespace HexagonalLib
             }
         }
 
+        /// <summary>
+        /// Writes all six neighbors into a caller-provided buffer without allocating memory.
+        /// The buffer must contain at least <see cref="EdgesCount"/> elements.
+        /// </summary>
+        public void GetNeighborsNonAlloc(Offset hex, Offset[] buffer)
+        {
+            ValidateNeighborsBuffer(buffer);
+            var offsets = GetNeighborsOffsets(hex);
+            for (var i = 0; i < EdgesCount; i++)
+            {
+                buffer[i] = offsets[i] + hex;
+            }
+        }
+
+        /// <summary>
+        /// Writes all six neighbors into a caller-provided buffer without allocating memory.
+        /// The buffer must contain at least <see cref="EdgesCount"/> elements.
+        /// </summary>
+        public void GetNeighborsNonAlloc(Axial hex, Axial[] buffer)
+        {
+            ValidateNeighborsBuffer(buffer);
+            for (var i = 0; i < EdgesCount; i++)
+            {
+                buffer[i] = _axialNeighbors[i] + hex;
+            }
+        }
+
+        /// <summary>
+        /// Writes all six neighbors into a caller-provided buffer without allocating memory.
+        /// The buffer must contain at least <see cref="EdgesCount"/> elements.
+        /// </summary>
+        public void GetNeighborsNonAlloc(Cubic hex, Cubic[] buffer)
+        {
+            ValidateNeighborsBuffer(buffer);
+            for (var i = 0; i < EdgesCount; i++)
+            {
+                buffer[i] = _cubicNeighbors[i] + hex;
+            }
+        }
+
         #endregion
 
         #region IsNeighbors
@@ -475,7 +513,16 @@ namespace HexagonalLib
         /// </summary>
         public bool IsNeighbors(Offset coord1, Offset coord2)
         {
-            return IsNeighbors(coord1, coord2, GetNeighbor);
+            var offsets = GetNeighborsOffsets(coord1);
+            for (var i = 0; i < EdgesCount; i++)
+            {
+                if (offsets[i] + coord1 == coord2)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -483,8 +530,15 @@ namespace HexagonalLib
         /// </summary>
         public bool IsNeighbors(Axial coord1, Axial coord2)
         {
-            Func<Axial, int, Axial> getNeighbor = GetNeighbor;
-            return IsNeighbors(coord1, coord2, getNeighbor);
+            for (var i = 0; i < EdgesCount; i++)
+            {
+                if (_axialNeighbors[i] + coord1 == coord2)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -492,19 +546,9 @@ namespace HexagonalLib
         /// </summary>
         public bool IsNeighbors(Cubic coord1, Cubic coord2)
         {
-            return IsNeighbors(coord1, coord2, GetNeighbor);
-        }
-
-        /// <summary>
-        /// Checks whether the two hexes are neighbors or no
-        /// </summary>
-        public bool IsNeighbors<T>(T coord1, T coord2, in Func<T, int, T> getNeighbor)
-            where T : struct, IEqualityComparer<T>
-        {
-            for (var neighborIndex = 0; neighborIndex < EdgesCount; neighborIndex++)
+            for (var i = 0; i < EdgesCount; i++)
             {
-                var neighbor = getNeighbor(coord1, neighborIndex);
-                if (neighbor.Equals(coord2))
+                if (_cubicNeighbors[i] + coord1 == coord2)
                 {
                     return true;
                 }
@@ -620,7 +664,16 @@ namespace HexagonalLib
         /// </summary>
         public byte GetNeighborIndex(Offset center, Offset neighbor)
         {
-            return GetNeighborIndex(center, neighbor, GetNeighbors);
+            var offsets = GetNeighborsOffsets(center);
+            for (byte i = 0; i < EdgesCount; i++)
+            {
+                if (offsets[i] + center == neighbor)
+                {
+                    return i;
+                }
+            }
+
+            throw NeighborIndexNotFound(center, neighbor);
         }
 
         /// <summary>
@@ -628,7 +681,15 @@ namespace HexagonalLib
         /// </summary>
         public byte GetNeighborIndex(Axial center, Axial neighbor)
         {
-            return GetNeighborIndex(center, neighbor, GetNeighbors);
+            for (byte i = 0; i < EdgesCount; i++)
+            {
+                if (_axialNeighbors[i] + center == neighbor)
+                {
+                    return i;
+                }
+            }
+
+            throw NeighborIndexNotFound(center, neighbor);
         }
 
         /// <summary>
@@ -636,27 +697,21 @@ namespace HexagonalLib
         /// </summary>
         public byte GetNeighborIndex(Cubic center, Cubic neighbor)
         {
-            return GetNeighborIndex(center, neighbor, GetNeighbors);
-        }
-
-        /// <summary>
-        /// Returns the bypass index to the specified neighbor
-        /// </summary>
-        private byte GetNeighborIndex<T>(T center, T neighbor, Func<T, IEnumerable<T>> getNeighbors)
-            where T : struct, IEqualityComparer<T>
-        {
-            byte neighborIndex = 0;
-            foreach (var current in getNeighbors(center))
+            for (byte i = 0; i < EdgesCount; i++)
             {
-                if (current.Equals(neighbor))
+                if (_cubicNeighbors[i] + center == neighbor)
                 {
-                    return neighborIndex;
+                    return i;
                 }
-
-                neighborIndex++;
             }
 
-            throw new HexagonalException($"Can't find bypass index", this, (nameof(center), center), (nameof(neighbor), neighbor));
+            throw NeighborIndexNotFound(center, neighbor);
+        }
+
+        private HexagonalException NeighborIndexNotFound<T>(T center, T neighbor)
+            where T : struct
+        {
+            return new HexagonalException($"Can't find bypass index", this, (nameof(center), center), (nameof(neighbor), neighbor));
         }
 
         #endregion
@@ -668,7 +723,12 @@ namespace HexagonalLib
         /// </summary>
         public (float x, float y) GetPointBetweenTwoNeighbours(Offset coord1, Offset coord2)
         {
-            return GetPointBetweenTwoNeighbours(coord1, coord2, IsNeighbors, ToPoint2);
+            if (!IsNeighbors(coord1, coord2))
+            {
+                throw NotNeighbors(coord1, coord2);
+            }
+
+            return GetPointBetween(ToPoint2(coord1), ToPoint2(coord2));
         }
 
         /// <summary>
@@ -676,7 +736,12 @@ namespace HexagonalLib
         /// </summary>
         public (float x, float y) GetPointBetweenTwoNeighbours(Axial coord1, Axial coord2)
         {
-            return GetPointBetweenTwoNeighbours(coord1, coord2, IsNeighbors, ToPoint2);
+            if (!IsNeighbors(coord1, coord2))
+            {
+                throw NotNeighbors(coord1, coord2);
+            }
+
+            return GetPointBetween(ToPoint2(coord1), ToPoint2(coord2));
         }
 
         /// <summary>
@@ -684,23 +749,22 @@ namespace HexagonalLib
         /// </summary>
         public (float x, float y) GetPointBetweenTwoNeighbours(Cubic coord1, Cubic coord2)
         {
-            return GetPointBetweenTwoNeighbours(coord1, coord2, IsNeighbors, ToPoint2);
-        }
-
-        /// <summary>
-        /// Returns the midpoint of the boundary segment of two neighbors
-        /// </summary>
-        private (float x, float y) GetPointBetweenTwoNeighbours<T>(T coord1, T coord2, Func<T, T, bool> isNeighbor, Func<T, (float X, float Y)> toPoint)
-            where T : struct
-        {
-            if (!isNeighbor(coord1, coord2))
+            if (!IsNeighbors(coord1, coord2))
             {
-                throw new HexagonalException($"Can't calculate point between not neighbors", this, (nameof(coord1), coord1), (nameof(coord2), coord2));
+                throw NotNeighbors(coord1, coord2);
             }
 
-            var c1 = toPoint(coord1);
-            var c2 = toPoint(coord2);
+            return GetPointBetween(ToPoint2(coord1), ToPoint2(coord2));
+        }
 
+        private HexagonalException NotNeighbors<T>(T coord1, T coord2)
+            where T : struct
+        {
+            return new HexagonalException($"Can't calculate point between not neighbors", this, (nameof(coord1), coord1), (nameof(coord2), coord2));
+        }
+
+        private static (float x, float y) GetPointBetween((float X, float Y) c1, (float X, float Y) c2)
+        {
             return ((c1.X + c2.X) / 2, (c1.Y + c2.Y) / 2);
         }
 
@@ -743,7 +807,7 @@ namespace HexagonalLib
         /// <summary>
         /// Return all neighbors offsets of the hex
         /// </summary>
-        private IReadOnlyList<Offset> GetNeighborsOffsets(Offset coord)
+        private Offset[] GetNeighborsOffsets(Offset coord)
         {
             switch (Type)
             {
@@ -760,37 +824,37 @@ namespace HexagonalLib
             }
         }
 
-        private static readonly List<Offset> _pointyOddNeighbors = new List<Offset>
+        private static readonly Offset[] _pointyOddNeighbors =
         {
             new Offset(+1, 0), new Offset(+1, -1), new Offset(0, -1),
             new Offset(-1, 0), new Offset(0, +1), new Offset(+1, +1),
         };
 
-        private static readonly List<Offset> _pointyEvenNeighbors = new List<Offset>
+        private static readonly Offset[] _pointyEvenNeighbors =
         {
             new Offset(+1, 0), new Offset(0, -1), new Offset(-1, -1),
             new Offset(-1, 0), new Offset(-1, +1), new Offset(0, +1),
         };
 
-        private static readonly List<Offset> _flatOddNeighbors = new List<Offset>
+        private static readonly Offset[] _flatOddNeighbors =
         {
             new Offset(+1, +1), new Offset(+1, 0), new Offset(0, -1),
             new Offset(-1, 0), new Offset(-1, +1), new Offset(0, +1),
         };
 
-        private static readonly List<Offset> _flatEvenNeighbors = new List<Offset>
+        private static readonly Offset[] _flatEvenNeighbors =
         {
             new Offset(+1, 0), new Offset(+1, -1), new Offset(0, -1),
             new Offset(-1, -1), new Offset(-1, 0), new Offset(0, +1),
         };
 
-        private static readonly List<Axial> _axialNeighbors = new List<Axial>
+        private static readonly Axial[] _axialNeighbors =
         {
             new Axial(+1, 0), new Axial(+1, -1), new Axial(0, -1),
             new Axial(-1, 0), new Axial(-1, +1), new Axial(0, +1),
         };
 
-        private static readonly List<Cubic> _cubicNeighbors = new List<Cubic>
+        private static readonly Cubic[] _cubicNeighbors =
         {
             new Cubic(+1, -1, 0), new Cubic(+1, 0, -1), new Cubic(0, +1, -1),
             new Cubic(-1, +1, 0), new Cubic(-1, 0, +1), new Cubic(0, -1, +1),
@@ -807,6 +871,14 @@ namespace HexagonalLib
             }
 
             return index;
+        }
+
+        private static void ValidateNeighborsBuffer<T>(T[] buffer)
+        {
+            if (buffer == null || buffer.Length < EdgesCount)
+            {
+                throw new ArgumentException($"The buffer must contain at least {EdgesCount} elements.", nameof(buffer));
+            }
         }
     }
 }

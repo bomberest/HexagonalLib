@@ -131,5 +131,31 @@ namespace HexagonalLib.Tests
             Assert.AreEqual(oNeighbor, fromAxial, $"Center=({offset} - {axial}); Current=({oNeighbor} - {aNeighbor}); Index={neighborIndex};");
             Assert.AreEqual(oNeighbor, fromCubic, $"Center=({offset} - {cubic}); Current=({oNeighbor} - {cNeighbor}); Index={neighborIndex};");
         }
+
+        [Test(Author = "Ivan Murashka", Description = "Check non-allocating neighbors API preserves the regular neighbors order")]
+        public void NeighborsNonAllocTest(
+            [Values] HexagonalGridType type,
+            [Values(-13, 0, 22)] int offsetX,
+            [Values(-8, 0, 15)] int offsetY)
+        {
+            var grid = new HexagonalGrid(type, InscribedRadius);
+            var offset = new Offset(offsetX, offsetY);
+            var axial = grid.ToAxial(offset);
+            var cubic = grid.ToCubic(offset);
+            var offsets = new Offset[HexagonalGrid.EdgesCount];
+            var axials = new Axial[HexagonalGrid.EdgesCount];
+            var cubics = new Cubic[HexagonalGrid.EdgesCount];
+
+            grid.GetNeighborsNonAlloc(offset, offsets);
+            grid.GetNeighborsNonAlloc(axial, axials);
+            grid.GetNeighborsNonAlloc(cubic, cubics);
+
+            for (var i = 0; i < HexagonalGrid.EdgesCount; i++)
+            {
+                Assert.AreEqual(grid.GetNeighbor(offset, i), offsets[i]);
+                Assert.AreEqual(grid.GetNeighbor(axial, i), axials[i]);
+                Assert.AreEqual(grid.GetNeighbor(cubic, i), cubics[i]);
+            }
+        }
     }
 }
